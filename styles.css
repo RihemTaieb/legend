@@ -1,0 +1,74 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-image: url('cover.png'); /* ta grande image */
+  background-size: cover;
+  background-position: center;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+}
+
+.card {
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 30px;
+  border-radius: 15px;
+  text-align: center;
+  width: 300px;
+}
+
+.promo-image {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: rgb(0, 0, 0);
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+
+.spotify {
+  background-color: #ffffff;
+}
+
+.apple {
+  background-color: #ffffff;
+}
+
+.youtube {
+  background-color: #ffffff;
+}
+
+.itunes {
+  background-color: #ffffff;
+}
+
+.btn:hover {
+  opacity: 0.8;
+}
+.title {
+  color: white;
+  font-size: 18px;
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #ccc;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
