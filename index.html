@@ -1,22 +1,330 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LEGEND - Streaming</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Personnalisation d'invitation – v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --brand:#0070f3;
+      --bg:#f5f5f5;
+      --card:#fff;
+      --text:#111827;
+      --muted:#6b7280;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      font-family:"Poppins", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      display:flex; flex-direction:column; align-items:center; gap:18px;
+      background:var(--bg); color:var(--text); margin:0; padding:20px;
+    }
+    h1{margin:6px 0 0; font-size:clamp(20px,3.5vw,32px)}
+    .container{display:grid; grid-template-columns:1fr; gap:16px; width:min(920px,100%)}
+    @media(min-width:860px){.container{grid-template-columns:320px 1fr; align-items:start}}
+
+    .card{
+      background:var(--card); border-radius:var(--radius);
+      box-shadow:0 8px 30px rgba(0,0,0,.08); padding:18px;
+    }
+
+    form.form{display:flex; flex-direction:column; gap:12px}
+    label{font-size:12px; color:var(--muted)}
+    input[type="text"], input[type="color"], select{
+      width:100%; padding:12px 14px; border:1px solid #e5e7eb; border-radius:10px; font-size:15px; outline:none;
+    }
+    input[type="text"]:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(0,112,243,.14)}
+
+    .row{display:flex; gap:10px}
+    .row > *{flex:1}
+
+    .btns{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .btn{
+      padding:12px 14px; border-radius:12px; border:0; cursor:pointer; font-weight:600; font-size:15px
+    }
+    .btn.primary{background:var(--brand); color:#fff}
+    .btn.ghost{background:#eef2ff; color:#1f2937}
+    .btn:hover{filter:brightness(.95)}
+
+    .canvas-wrap{position:relative}
+    canvas{
+      border:2px solid #e5e7eb; margin-top:8px; border-radius:12px; background:#fff; width:100%; height:auto; display:block
+    }
+    .hint{font-size:12px; color:var(--muted); margin-top:6px}
+    .small{font-size:12px; color:var(--muted)}
+  </style>
 </head>
 <body>
-  <div class="card">
-    <img src="cover.png" alt="Sabrina Carpenter" class="promo-image">
- <h2 class="title">DAHYYA 'LEGEND'</h2>
-    <p class="subtitle">Choose music service</p>
-    <div class="links">
-      <a href="https://open.spotify.com/" target="_blank" class="btn spotify"> Spotify</a>
-      <a href="https://music.apple.com/" target="_blank" class="btn apple"> Apple Music</a>
-      <a href="https://music.youtube.com/" target="_blank" class="btn youtube"> YouTube Music</a>
-      <a href="https://music.apple.com/fr/itunes" target="_blank" class="btn itunes"> iTunes Store</a>
+  <h1>🎉 Crée ton invitation personnalisée 🎨</h1>
+
+  <div class="container">
+    <!-- Panneau de contrôle -->
+    <div class="card">
+      <form class="form" id="form" autocomplete="off">
+        <div>
+          <label for="nom">Nom de la personne</label>
+          <input type="text" id="nom" name="nom" placeholder="Ex. Lina Ben Ali" />
+        </div>
+        <div>
+          <label for="message">Message</label>
+          <input type="text" id="message" name="message" placeholder="Ex. Tu es invité·e à ma fête ! Samedi 18h 🎂" />
+        </div>
+        <div class="row">
+          <div>
+            <label for="couleur">Couleur du texte</label>
+            <input type="color" id="couleur" name="couleur" value="#000000" />
+          </div>
+          <div>
+            <label for="fontSize">Taille du texte</label>
+            <select id="fontSize" name="fontSize">
+              <option value="22">Petit</option>
+              <option value="26" selected>Moyen</option>
+              <option value="32">Grand</option>
+              <option value="38">Très grand</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="bgUrl">Image de fond (URL, optionnel)</label>
+          <input type="text" id="bgUrl" name="bgUrl" placeholder="https://… (doit autoriser CORS)" />
+          <p class="small">Astuce : Imgur et i.postimg.cc activent généralement CORS sur les images.</p>
+        </div>
+        <div class="btns">
+          <button type="button" class="btn primary" id="generate">Générer</button>
+          <button type="button" class="btn ghost" id="reset">Réinitialiser</button>
+          <button type="button" class="btn ghost" id="download">Télécharger</button>
+          <button type="button" class="btn ghost" id="share">Partager</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Aperçu -->
+    <div class="card">
+      <div class="canvas-wrap">
+        <canvas id="invitationCanvas" aria-label="Aperçu de l'invitation" role="img"></canvas>
+      </div>
+      <p class="hint">Conseil : le texte est automatiquement renvoyé à la ligne. Modifie la taille/largeur de la fenêtre pour un rendu responsive.</p>
     </div>
   </div>
+
+  <script>
+    // ===== Canvas HiDPI + responsive =====
+    const canvas = document.getElementById('invitationCanvas');
+    const ctx = canvas.getContext('2d');
+    const DPR = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+
+    const BASE_W = 900; // base logique
+    const BASE_H = 600;
+
+    function resizeCanvas() {
+      // Canvas logique en pixels => upscalé pour HiDPI
+      const cssWidth = Math.min(document.querySelector('.card').clientWidth - 24, BASE_W);
+      const ratio = BASE_H / BASE_W;
+      const cssHeight = Math.round(cssWidth * ratio);
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = cssHeight + 'px';
+      canvas.width = cssWidth * DPR;
+      canvas.height = cssHeight * DPR;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      drawInvitation(state.nom, state.message, state.couleur);
+    }
+    window.addEventListener('resize', () => { clearTimeout(resizeCanvas._t); resizeCanvas._t=setTimeout(resizeCanvas, 100); });
+
+    // ===== État =====
+    const state = {
+      nom: '',
+      message: '',
+      couleur: '#000000',
+      fontSize: 26,
+      bgUrl: 'https://i.imgur.com/2X4pV7P.png', // exemple
+      bgImage: null,
+      bgFailed: false
+    };
+
+    // ===== Chargement des polices =====
+    document.fonts && document.fonts.ready.then(() => drawInvitation());
+
+    // ===== Chargement image de fond (CORS) =====
+    function loadBackground(url){
+      return new Promise((resolve) => {
+        if(!url){ state.bgImage = null; state.bgFailed=false; return resolve(); }
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => { state.bgImage = img; state.bgFailed=false; resolve(); };
+        img.onerror = () => { state.bgImage = null; state.bgFailed=true; resolve(); };
+        img.src = url;
+      });
+    }
+
+    // ===== Rendu principal =====
+    function drawInvitation(nom = '', message = '', couleur = '#000000') {
+      const w = canvas.width / DPR; const h = canvas.height / DPR;
+      const pad = 32;
+
+      // Fond
+      ctx.clearRect(0, 0, w, h);
+      if (state.bgImage) {
+        ctx.drawImage(state.bgImage, 0, 0, w, h);
+      } else {
+        // Dégradé de repli si l'image échoue
+        const g = ctx.createLinearGradient(0, 0, w, h);
+        g.addColorStop(0, '#f0f9ff');
+        g.addColorStop(1, '#e0e7ff');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // Cadre blanc semi-transparant pour garantir lisibilité
+      ctx.fillStyle = 'rgba(255,255,255,0.66)';
+      ctx.fillRect(pad, pad, w - pad*2, h - pad*2);
+
+      // Titre (nom)
+      ctx.fillStyle = couleur;
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.font = `700 ${Math.round(state.fontSize + 6)}px Poppins, sans-serif`;
+      const nameY = pad + 16;
+      wrapText(nom || 'Votre invité·e', pad + 20, nameY, w - pad*2 - 40, state.fontSize + 12, true);
+
+      // Message
+      ctx.font = `400 ${Math.round(state.fontSize)}px Poppins, sans-serif`;
+      const msgY = nameY + 60;
+      wrapText(message || 'Tu es invité·e ! 🎈', pad + 20, msgY, w - pad*2 - 40, state.fontSize + 10, false);
+
+      // Badge en bas à droite
+      const badge = 'Fait avec ❤️';
+      ctx.font = '600 14px Poppins, sans-serif';
+      const bw = ctx.measureText(badge).width + 16; const bh = 26;
+      const bx = w - pad - bw; const by = h - pad - bh;
+      ctx.fillStyle = 'rgba(17,24,39,.75)';
+      roundRect(ctx, bx, by, bw, bh, 10);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(badge, bx + 8, by + 6);
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.arcTo(x+w, y, x+w, y+h, r);
+      ctx.arcTo(x+w, y+h, x, y+h, r);
+      ctx.arcTo(x, y+h, x, y, r);
+      ctx.arcTo(x, y, x+w, y, r);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Renvoi à la ligne intelligent
+    function wrapText(text, x, y, maxWidth, lineHeight, bold){
+      const words = (text || '').toString().split(/(\s+)/); // conserve espaces
+      let line = '';
+      let cursorY = y;
+      for (let i = 0; i < words.length; i++){
+        const testLine = line + words[i];
+        const w = ctx.measureText(testLine).width;
+        if (w > maxWidth && i > 0){
+          ctx.fillText(line.trim(), x, cursorY);
+          line = words[i];
+          cursorY += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line.trim(), x, cursorY);
+    }
+
+    // ===== Formulaires & URL =====
+    const qs = new URLSearchParams(location.search);
+    const $ = (id) => document.getElementById(id);
+
+    function syncFromForm(){
+      state.nom = $('nom').value; state.message = $('message').value;
+      state.couleur = $('couleur').value; state.fontSize = +$('fontSize').value;
+      state.bgUrl = $('bgUrl').value || state.bgUrl;
+    }
+
+    function paramsFromState(){
+      const p = new URLSearchParams();
+      if (state.nom) p.set('nom', state.nom);
+      if (state.message) p.set('message', state.message);
+      if (state.couleur) p.set('couleur', state.couleur);
+      if (state.fontSize) p.set('size', String(state.fontSize));
+      if (state.bgUrl) p.set('bg', state.bgUrl);
+      return p.toString();
+    }
+
+    function syncFromURL(){
+      const nom = qs.get('nom') || '';
+      const message = qs.get('message') || '';
+      const couleur = qs.get('couleur') || '#000000';
+      const size = +(qs.get('size') || 26);
+      const bg = qs.get('bg') || state.bgUrl;
+      $('nom').value = nom; $('message').value = message; $('couleur').value = couleur; $('fontSize').value = String(size); $('bgUrl').value = bg;
+      state.nom = nom; state.message = message; state.couleur = couleur; state.fontSize = size; state.bgUrl = bg;
+      return loadBackground(bg).then(() => drawInvitation(nom, message, couleur));
+    }
+
+    // Actions
+    $('generate').onclick = async () => {
+      syncFromForm();
+      await loadBackground(state.bgUrl);
+      drawInvitation(state.nom, state.message, state.couleur);
+    };
+
+    $('reset').onclick = async () => {
+      $('nom').value = '';
+      $('message').value = '';
+      $('couleur').value = '#000000';
+      $('fontSize').value = '26';
+      $('bgUrl').value = '';
+      state.nom = ''; state.message=''; state.couleur='#000000'; state.fontSize=26;
+      await loadBackground('https://i.imgur.com/2X4pV7P.png');
+      drawInvitation();
+      history.replaceState(null, '', location.pathname);
+    };
+
+    $('download').onclick = () => {
+      try{
+        const link = document.createElement('a');
+        link.download = 'invitation.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }catch(e){
+        alert('Téléchargement impossible. Si vous avez défini une image de fond externe qui ne permet pas CORS, le canvas est protégé. Utilisez une image autorisant CORS.');
+      }
+    };
+
+    $('share').onclick = async () => {
+      syncFromForm();
+      const params = paramsFromState();
+      const shareUrl = `${window.location.origin}${window.location.pathname}?${params}`;
+      try{
+        await navigator.clipboard.writeText(shareUrl);
+      }catch(e){ /* ignore */ }
+
+      if (navigator.share){
+        try{ await navigator.share({ title: 'Mon invitation 🎉', text: 'Regarde mon invitation', url: shareUrl }); return; }catch(e){ /* fallback */ }
+      }
+      alert('✅ Lien copié !\n\n' + shareUrl);
+    };
+
+    // Aperçu en temps réel
+    ['nom','message','couleur','fontSize','bgUrl'].forEach(id => {
+      $(id).addEventListener('input', () => {
+        if (id === 'bgUrl'){ return; } // évite recharger à chaque frappe
+        syncFromForm();
+        drawInvitation(state.nom, state.message, state.couleur);
+      });
+    });
+
+    // Init
+    (async function init(){
+      resizeCanvas();
+      await syncFromURL();
+    })();
+  </script>
 </body>
 </html>
